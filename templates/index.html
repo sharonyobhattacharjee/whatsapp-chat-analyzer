@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>WhatsApp Chat Analyzer</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+
+    background:
+        linear-gradient(135deg, #f8fafc, #eef2ff);
+
+    color: #111827;
+}
+
+.container {
+    width: min(1400px, 94%);
+    margin: auto;
+    padding: 35px 0 70px;
+}
+
+.hero {
+    background: #111827;
+    color: white;
+    padding: 42px;
+    border-radius: 22px;
+    margin-bottom: 25px;
+}
+
+.hero h1 {
+    font-size: 42px;
+    margin: 0 0 10px;
+}
+
+.hero p {
+    color: #cbd5e1;
+    font-size: 17px;
+    margin: 0;
+}
+
+.upload-card {
+    background: white;
+    padding: 30px;
+    border-radius: 18px;
+    box-shadow: 0 10px 35px rgba(0,0,0,.06);
+    margin-bottom: 25px;
+}
+
+.upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 15px;
+    padding: 35px;
+    text-align: center;
+}
+
+input[type="file"] {
+    margin: 15px;
+}
+
+select {
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    min-width: 220px;
+}
+
+button {
+    background: #111827;
+    color: white;
+    border: 0;
+    padding: 13px 25px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+button:hover {
+    opacity: .9;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+#status {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 10px;
+    display: none;
+}
+
+.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.dashboard {
+    display: none;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 18px;
+
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.05);
+}
+
+.stat-title {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.section {
+    background: white;
+    padding: 25px;
+    border-radius: 17px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.05);
+    margin-bottom: 25px;
+}
+
+.section h2 {
+    margin-top: 0;
+}
+
+.two-column {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 25px;
+}
+
+.chart-container {
+    position: relative;
+    height: 380px;
+}
+
+.chart-small {
+    height: 330px;
+}
+
+.wordcloud {
+    width: 100%;
+    max-height: 600px;
+    object-fit: contain;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 11px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+th {
+    color: #64748b;
+}
+
+.heatmap {
+    overflow-x: auto;
+}
+
+.heatmap-grid {
+    display: grid;
+    gap: 4px;
+    min-width: 900px;
+}
+
+.heat-cell {
+    min-height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #111827;
+}
+
+.heat-label {
+    font-size: 12px;
+    padding: 5px;
+}
+
+.loading {
+    text-align: center;
+    padding: 30px;
+    display: none;
+}
+
+@media (max-width: 800px) {
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .hero h1 {
+        font-size: 30px;
+    }
+
+}
+
+@media (max-width: 500px) {
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="hero">
+
+<h1>WhatsApp Chat Analyzer</h1>
+
+<p>
+Analyze your WhatsApp conversations with detailed
+statistics, timelines, activity patterns, word clouds
+and emoji analysis.
+</p>
+
+</div>
+
+
+<div class="upload-card">
+
+<div class="upload-area">
+
+<h2>Upload WhatsApp Chat</h2>
+
+<p>
+Export your WhatsApp conversation as a
+<strong>.txt</strong> file and upload it here.
+</p>
+
+<input
+    type="file"
+    id="chatFile"
+    accept=".txt">
+
+<br>
+
+<label>
+    Analyze as:
+</label>
+
+<select id="userSelect">
+
+<option value="Overall">
+Overall
+</option>
+
+</select>
+
+<br><br>
+
+<button id="analyzeButton"
+        onclick="analyzeChat()">
+
+Analyze Chat
+
+</button>
+
+</div>
+
+<div id="status"></div>
+
+<div class="loading"
+     id="loading">
+
+Analyzing your chat...
+
+</div>
+
+</div>
+
+
+<div class="dashboard"
+     id="dashboard">
+
+
+<!-- STATISTICS -->
+
+<div class="stats">
+
+<div class="stat-card">
+
+<div class="stat-title">
+Total Messages
+</div>
+
+<div class="stat-value"
+     id="messages">
+
+0
+
+</div>
+
+</div>
+
+
+<div class="stat-card">
+
+<div class="stat-title">
+Total Words
+</div>
+
+<div class="stat-value"
+     id="words">
+
+0
+
+</div>
+
+</div>
+
+
+<div class="stat-card">
+
+<div class="stat-title">
+Media Messages
+</div>
+
+<div class="stat-value"
+     id="media">
+
+0
+
+</div>
+
+</div>
+
+
+<div class="stat-card">
+
+<div class="stat-title">
+Links Shared
+</div>
+
+<div class="stat-value"
+     id="links">
+
+0
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- MONTHLY -->
+
+<div class="section">
+
+<h2>
+Monthly Timeline
+</h2>
+
+<div class="chart-container">
+
+<canvas id="monthlyChart"></canvas>
+
+</div>
+
+</div>
+
+
+<!-- DAILY -->
+
+<div class="section">
+
+<h2>
+Daily Timeline
+</h2>
+
+<div class="chart-container">
+
+<canvas id="dailyChart"></canvas>
+
+</div>
+
+</div>
+
+
+<!-- BUSY DAY + USERS -->
+
+<div class="two-column">
+
+<div class="section">
+
+<h2>
+Most Busy Days
+</h2>
+
+<div class="chart-container chart-small">
+
+<canvas id="busyDayChart"></canvas>
+
+</div>
+
+</div>
+
+
+<div class="section">
+
+<h2>
+Most Busy Users
+</h2>
+
+<div class="chart-container chart-small">
+
+<canvas id="busyUsersChart"></canvas>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- USER PERCENT -->
+
+<div class="section">
+
+<h2>
+User Message Distribution
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>User</th>
+
+<th>Percentage</th>
+
+</tr>
+
+</thead>
+
+<tbody id="userTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<!-- HEATMAP -->
+
+<div class="section">
+
+<h2>
+Activity Heatmap
+</h2>
+
+<div class="heatmap">
+
+<div id="heatmap"
+     class="heatmap-grid">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- WORD CLOUD -->
+
+<div class="section">
+
+<h2>
+Word Cloud
+</h2>
+
+<img
+    id="wordcloud"
+    class="wordcloud"
+    alt="Word Cloud">
+
+</div>
+
+
+<!-- EMOJI -->
+
+<div class="two-column">
+
+<div class="section">
+
+<h2>
+Emoji Analysis
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Emoji</th>
+
+<th>Count</th>
+
+</tr>
+
+</thead>
+
+<tbody id="emojiTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<div class="section">
+
+<h2>
+Emoji Distribution
+</h2>
+
+<div class="chart-container chart-small">
+
+<canvas id="emojiChart"></canvas>
+
+</div>
+
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+<script>
+
+let monthlyChart;
+let dailyChart;
+let busyDayChart;
+let busyUsersChart;
+let emojiChart;
+
+
+function showStatus(message, type) {
+
+    const status =
+        document.getElementById("status");
+
+    status.style.display = "block";
+
+    status.className = type;
+
+    status.textContent = message;
+}
+
+
+function destroyChart(chart) {
+
+    if (chart) {
+        chart.destroy();
+    }
+
+}
+
+
+function createCharts(data) {
+
+    destroyChart(monthlyChart);
+    destroyChart(dailyChart);
+    destroyChart(busyDayChart);
+    destroyChart(busyUsersChart);
+    destroyChart(emojiChart);
+
+
+    // MONTHLY
+
+    monthlyChart =
+        new Chart(
+            document.getElementById(
+                "monthlyChart"
+            ),
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels:
+                        data.monthly_timeline.time,
+
+                    datasets: [{
+
+                        label:
+                            "Messages",
+
+                        data:
+                            data.monthly_timeline.message,
+
+                        tension: 0.3,
+
+                        fill: true
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+
+    // DAILY
+
+    dailyChart =
+        new Chart(
+            document.getElementById(
+                "dailyChart"
+            ),
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels:
+                        data.daily_timeline.date,
+
+                    datasets: [{
+
+                        label:
+                            "Messages",
+
+                        data:
+                            data.daily_timeline.message,
+
+                        tension: 0.2,
+
+                        pointRadius: 2
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    scales: {
+
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 15
+                            }
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+
+    // BUSY DAYS
+
+    busyDayChart =
+        new Chart(
+            document.getElementById(
+                "busyDayChart"
+            ),
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels:
+                        data.busy_days.days,
+
+                    datasets: [{
+
+                        label:
+                            "Messages",
+
+                        data:
+                            data.busy_days.messages
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+
+    // BUSY USERS
+
+    busyUsersChart =
+        new Chart(
+            document.getElementById(
+                "busyUsersChart"
+            ),
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels:
+                        data.busy_users.names,
+
+                    datasets: [{
+
+                        label:
+                            "Messages",
+
+                        data:
+                            data.busy_users.messages
+
+                    }]
+
+                },
+
+                options: {
+
+                    indexAxis: "y",
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+
+    // EMOJI
+
+    const emojiLabels =
+        data.emoji.emojis.slice(0, 10);
+
+    const emojiCounts =
+        data.emoji.counts.slice(0, 10);
+
+
+    emojiChart =
+        new Chart(
+            document.getElementById(
+                "emojiChart"
+            ),
+            {
+
+                type: "doughnut",
+
+                data: {
+
+                    labels:
+                        emojiLabels,
+
+                    datasets: [{
+
+                        data:
+                            emojiCounts
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+}
+
+
+function createUserTable(data) {
+
+    const table =
+        document.getElementById(
+            "userTable"
+        );
+
+    table.innerHTML = "";
+
+    for (
+        let i = 0;
+        i < data.user_percent.names.length;
+        i++
+    ) {
+
+        const row =
+            document.createElement("tr");
+
+        row.innerHTML = `
+
+            <td>
+                ${data.user_percent.names[i]}
+            </td>
+
+            <td>
+                ${data.user_percent.percent[i]}%
+            </td>
+
+        `;
+
+        table.appendChild(row);
+
+    }
+
+}
+
+
+function createEmojiTable(data) {
+
+    const table =
+        document.getElementById(
+            "emojiTable"
+        );
+
+    table.innerHTML = "";
+
+    const limit =
+        Math.min(
+            data.emoji.emojis.length,
+            20
+        );
+
+    for (let i = 0; i < limit; i++) {
+
+        const row =
+            document.createElement("tr");
+
+        row.innerHTML = `
+
+            <td>
+                ${data.emoji.emojis[i]}
+            </td>
+
+            <td>
+                ${data.emoji.counts[i]}
+            </td>
+
+        `;
+
+        table.appendChild(row);
+
+    }
+
+}
+
+
+function createHeatmap(data) {
+
+    const container =
+        document.getElementById(
+            "heatmap"
+        );
+
+    container.innerHTML = "";
+
+    const columns =
+        data.heatmap.periods.length + 1;
+
+    container.style.gridTemplateColumns =
+        `120px repeat(${data.heatmap.periods.length}, 1fr)`;
+
+
+    const empty =
+        document.createElement("div");
+
+    container.appendChild(empty);
+
+
+    for (
+        const period
+        of data.heatmap.periods
+    ) {
+
+        const label =
+            document.createElement("div");
+
+        label.className =
+            "heat-label";
+
+        label.textContent =
+            period;
+
+        container.appendChild(label);
+
+    }
+
+
+    const values =
+        data.heatmap.values;
+
+
+    let max = 1;
+
+    for (
+        const row of values
+    ) {
+
+        for (
+            const value of row
+        ) {
+
+            if (value > max) {
+                max = value;
+            }
+
+        }
+
+    }
+
+
+    for (
+        let r = 0;
+        r < data.heatmap.days.length;
+        r++
+    ) {
+
+        const day =
+            document.createElement("div");
+
+        day.className =
+            "heat-label";
+
+        day.textContent =
+            data.heatmap.days[r];
+
+        container.appendChild(day);
+
+
+        for (
+            let c = 0;
+            c < data.heatmap.periods.length;
+            c++
+        ) {
+
+            const value =
+                values[r][c];
+
+            const cell =
+                document.createElement("div");
+
+            cell.className =
+                "heat-cell";
+
+            const intensity =
+                value / max;
+
+            const lightness =
+                95 - (intensity * 45);
+
+            cell.style.background =
+                `hsl(142, 70%, ${lightness}%)`;
+
+            cell.textContent =
+                value;
+
+            cell.title =
+                `${data.heatmap.days[r]} ${data.heatmap.periods[c]}: ${value} messages`;
+
+            container.appendChild(cell);
+
+        }
+
+    }
+
+}
+
+
+function populateUsers(users) {
+
+    const select =
+        document.getElementById(
+            "userSelect"
+        );
+
+    select.innerHTML = "";
+
+    const overall =
+        document.createElement(
+            "option"
+        );
+
+    overall.value =
+        "Overall";
+
+    overall.textContent =
+        "Overall";
+
+    select.appendChild(
+        overall
+    );
+
+
+    for (
+        const user of users
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+        option.value =
+            user;
+
+        option.textContent =
+            user;
+
+        select.appendChild(
+            option
+        );
+
+    }
+
+}
+
+
+async function analyzeChat() {
+
+    const fileInput =
+        document.getElementById(
+            "chatFile"
+        );
+
+    const button =
+        document.getElementById(
+            "analyzeButton"
+        );
+
+    const loading =
+        document.getElementById(
+            "loading"
+        );
+
+    if (!fileInput.files.length) {
+
+        showStatus(
+            "Please select a WhatsApp .txt chat file.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    button.disabled = true;
+
+    loading.style.display =
+        "block";
+
+    showStatus(
+        "Analyzing your WhatsApp chat...",
+        "success"
+    );
+
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "chat",
+        fileInput.files[0]
+    );
+
+    formData.append(
+        "user",
+        document.getElementById(
+            "userSelect"
+        ).value
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/analyze",
+                {
+
+                    method: "POST",
+
+                    body: formData
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Analysis failed."
+            );
+
+        }
+
+
+        // Statistics
+
+        document.getElementById(
+            "messages"
+        ).textContent =
+            data.statistics.messages.toLocaleString();
+
+
+        document.getElementById(
+            "words"
+        ).textContent =
+            data.statistics.words.toLocaleString();
+
+
+        document.getElementById(
+            "media"
+        ).textContent =
+            data.statistics.media.toLocaleString();
+
+
+        document.getElementById(
+            "links"
+        ).textContent =
+            data.statistics.links.toLocaleString();
+
+
+        populateUsers(
+            data.users
+        );
+
+
+        createCharts(
+            data
+        );
+
+
+        createUserTable(
+            data
+        );
+
+
+        createEmojiTable(
+            data
+        );
+
+
+        createHeatmap(
+            data
+        );
+
+
+        document.getElementById(
+            "wordcloud"
+        ).src =
+            "data:image/png;base64," +
+            data.wordcloud;
+
+
+        document.getElementById(
+            "dashboard"
+        ).style.display =
+            "block";
+
+
+        showStatus(
+            "Analysis completed successfully.",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        showStatus(
+            error.message,
+            "error"
+        );
+
+    } finally {
+
+        button.disabled = false;
+
+        loading.style.display =
+            "none";
+
+    }
+
+}
+
+</script>
+
+</body>
+
+</html>
